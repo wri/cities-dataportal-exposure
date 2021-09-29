@@ -1,0 +1,155 @@
+﻿sector_name,gcom_sector_name,feature_key,feature_value,feature_category
+Commercial,Commercial,building,"	retail",Commercial
+Commercial,Commercial,building,warehouse,Commercial
+Commercial,Commercial,building,commercial,Commercial
+Commercial,Commercial,building,industrial,Commercial
+Commercial,Commercial,amenity,marketplace,Others
+Commercial,Commercial,building,supermarket,Commercial
+Education,Education,amenity,college,Education
+Education,Education,amenity,kindergarten,Education
+Education,Education,amenity,library,Education
+Education,Education,amenity,school,Education
+Education,Education,amenity,childcare,
+Education,Education,amenity,driving_school,Education
+Education,Education,,music_school,
+Education,Education,,language_school,
+Education,Education,,prep_school,
+Education,Education,amenity,university,Education
+Entertainment_Art_Culture,Society/community & culture,amenity,arts_centre,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,cinema,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,fountain,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,community_centre,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,nightclub,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,casino,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,studio,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,arts_centre,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,dojo,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,patrimonio_cultural,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,events_venue,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,love_hotel,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,convenience,
+Entertainment_Art_Culture,Society/community & culture,building,temple,
+Entertainment_Art_Culture,Society/community & culture,building,church,
+Entertainment_Art_Culture,Society/community & culture,building,chapel,
+Entertainment_Art_Culture,Society/community & culture,building,mosque,
+Entertainment_Art_Culture,Society/community & culture,amenity,hunting_stand,
+Entertainment_Art_Culture,Society/community & culture,amenity,social_centre,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,music_venue,
+Entertainment_Art_Culture,Society/community & culture,amenity,spa,
+Entertainment_Art_Culture,Society/community & culture,amenity,training,
+Entertainment_Art_Culture,Society/community & culture,amenity,brothel,Entertainment_Art_Culture
+Entertainment_Art_Culture,Society/community & culture,amenity,swimming_pool,
+Entertainment_Art_Culture,Society/community & culture,amenity,solarium,
+Entertainment_Art_Culture,Society/community & culture,amenity,theatre,Entertainment_Art_Culture
+Facilities,Society/community & culture,amenity,bbq,Facilities
+Facilities,Water supply and sanitation,,lavoir,
+Facilities,Water supply and sanitation,amenity,shower,
+Facilities,Water supply and sanitation,amenity,drinking_water,Facilities
+Facilities,"ICT (Information and 
+Communications technology)",amenity,telephone,Facilities
+Facilities,Society/community & culture,amenity,shelter,Facilities
+Facilities,Society/community & culture,amenity,clock,
+Facilities,Society/community & culture,,pet_grooming,
+Facilities,Society/community & culture,amenity,bench,Facilities
+Facilities,Water supply and sanitation,amenity,water_point,Facilities
+Facilities,Water supply and sanitation,amenity,toilets,Facilities
+Financial,Society/community & culture,amenity,atm,Financial
+Financial,Society/community & culture,amenity,bank,Financial
+Financial,Society/community & culture,amenity,payment_terminal,
+Financial,Society/community & culture,amenity,bureau_de_change,Financial
+Financial,Society/community & culture,amenity,money_transfer,
+Financial,Society/community & culture,,bitcoin_office,
+Financial,Society/community & culture,amenity,stock_exchange,Financial
+Healthcare,Public Health,amenity,clinic,Healthcare
+Healthcare,Public Health,amenity,hospital,Healthcare
+Healthcare,Public Health,amenity,dentist,Healthcare
+Healthcare,Public Health,amenity,veterinary,Healthcare
+Healthcare,Public Health,,doctors,
+Healthcare,Public Health,amenity,social_facility,Healthcare
+Healthcare,Public Health,amenity,nursing_home,Healthcare
+Healthcare,Public Health,amenity,blood_bank,
+Healthcare,Public Health,amenity,pharmacy,Healthcare
+Accommodation,Residential,building,"	hotel",Accommodation
+Accommodation,Residential,building,apartments,Accommodation
+Accommodation,Residential,building,house,Accommodation
+Accommodation,Residential,building,hut,
+Accommodation,Residential,building,farm,Accommodation
+Accommodation,Residential,building,cabin,
+Accommodation,Residential,building,casa,
+Accommodation,Residential,building,residential,Accommodation
+Others,Society/community & culture,amenity,place_of_worship,Others
+Public_Service,Law & Order,amenity,"	police",Public_Service
+Public_Service,Law & Order,amenity,courthouse,Public_Service
+Public_Service,Other ,amenity,embassy,Public_Service
+Public_Service,Emergency Services,amenity,fire_station,Public_Service
+Public_Service,Law & Order,amenity,post_box,Public_Service
+Public_Service,Law & Order,amenity,post_office,Public_Service
+Public_Service,Law & Order,amenity,prison,Public_Service
+Public_Service,Society/community & culture,amenity,townhall,Public_Service
+Public_Service,Law & Order,amenity,security_booth,Public_Service
+Public_Service,Society/community & culture,,public_b,
+Public_Service,Society/community & culture,,public_bookcase,
+Public_Service,Society/community & culture,building,public,
+Public_Service,Society/community & culture,amenity,ranger_station,Public_Service
+Public_Service,Society/community & culture,,funerary,
+Public_Service,Society/community & culture,building,public_building,
+Public_Service,Society/community & culture,amenity,payment_centre,Public_Service
+Sustenance,Commercial,amenity,bar,Sustenance
+Sustenance,Commercial,amenity,cafe,Sustenance
+Sustenance,Commercial,amenity,fast_food,Sustenance
+Sustenance,Commercial,amenity,ice_cream,Sustenance
+Sustenance,Commercial,amenity,internet_cafe,Others
+Sustenance,Commercial,amenity,biergarten,Sustenance
+Sustenance,Commercial,amenity,food_court,Sustenance
+Sustenance,Commercial,amenity,restaurant,Sustenance
+Transportation,Transport,building,"	train_station",Civic_Amenity
+Transportation,Transport,building,"	transportation",Civic_Amenity
+Transportation,Transport,amenity,bus_station,Transportation
+Transportation,Transport,amenity,car_rental,Transportation
+Transportation,Transport,amenity,fuel,Transportation
+Transportation,Transport,amenity,parking,Transportation
+Transportation,Transport,amenity,parking_space,Transportation
+Transportation,Transport,public_transport,platform,
+Transportation,Transport,public_transport,station,
+Transportation,Transport,public_transport,stop_area,
+Transportation,Transport,public_transport,stop_position,
+Transportation,Transport,amenity,parking_entrance,Transportation
+Transportation,Transport,amenity,motorcycle_parking,Transportation
+Transportation,Transport,amenity,car_wash,Transportation
+Transportation,Transport,,bicycle_rental,
+Transportation,Transport,,bicycle_parking,
+Transportation,Transport,amenity,bicycle_repair_station,
+Transportation,Transport,,ferry_terminal,
+Transportation,Transport,,vehicle_inspection,
+Transportation,Transport,amenity,car_sharing,Transportation
+Transportation,Transport,,garage,
+Transportation,Transport,amenity,taxi,Transportation
+Waste_Management,Waste management,amenity,recycling,Waste_Management
+Waste_Management,Waste management,amenity,waste_disposal,Waste_Management
+Waste_Management,Waste management,amenity,waste_basket,
+Waste_Management,Waste management,amenity,waste_transfer_station,Waste_Management
+Public_Service,Society/community & culture,building,civic,Civic_Amenity
+Public_Service,Society/community & culture,building,government,Civic_Amenity
+Entertainment_Art_Culture,Society/community & culture,building,religious,Religious
+Entertainment_Art_Culture,Society/community & culture,building,stadium,Sports
+Others,Energy,building,transformer_tower,Power_Technical_buildings
+Others,Water supply and sanitation,building,water_tower,Power_Technical_buildings
+Others,Other,building,storage_tank,
+Others,Other,building,office,
+industrial,Industrial,,industrial,
+Others,Other,,warehouse,
+agriculture,Food & Agriculture,,greenhouse,
+Others,Other,,roof,
+Others,Transport,,bridge,
+Others,Other,,grave_yard,
+Others,Other,,window,
+Others,Other,amenity,animal_shelter,Others
+Others,Other,amenity,vending_machine,Others
+Others,Other,,pet,
+Others,Other,,urbano,
+Others,Other,,device_charging_station,
+Others,Other,,pest_control,
+Others,Other,,bicycle,
+Others,Other,,crematorium,
+Others,Other,,animal_breeding,
+Others,Other,,compressed_air,
