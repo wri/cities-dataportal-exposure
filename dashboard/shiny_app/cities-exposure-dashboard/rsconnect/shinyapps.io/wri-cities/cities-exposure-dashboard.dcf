@@ -1,0 +1,13 @@
+name: cities-exposure-dashboard
+title: cities-exposure-dashboard
+username:
+account: wri-cities
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5079060
+bundleId: 5231966
+url: https://wri-cities.shinyapps.io/cities-exposure-dashboard/
+when: 1636467019.22592
+lastSyncTime: 1636467019.22592
+asMultiple: FALSE
+asStatic: FALSE
