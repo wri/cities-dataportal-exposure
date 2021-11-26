@@ -33,9 +33,6 @@ amenity_exposure_lst = read.csv("https://storage.googleapis.com/data_portal_expo
 
 # define filter values ----
 
-# compute average heat of all amenities
-city_amenity_avg_heat = mean(amenity_exposure_lst$exposure_lst_mean)
-amenity_exposure_lst$heat_dev_from_amenities = amenity_exposure_lst$exposure_lst_mean - city_amenity_avg_heat
 
 # define available cities
 available_cities = unique(amenity_exposure_lst$city_name)
@@ -308,7 +305,7 @@ server <- function(input, output, session) {
     #                       step = 1
     #     )
     # )
-    
+
     
     ### reactive plots definition ----
     observe({
@@ -342,7 +339,7 @@ server <- function(input, output, session) {
                           step = 1
         )
         
-        
+
         
         # get heat threshold
         heat_threshold_value = input$heat_threshold
@@ -483,66 +480,66 @@ server <- function(input, output, session) {
                           step = 1
         )
         
-        
+
         # filter heat threshold
         city_lst_mask_threshold = city_lst_mask
-        
+
         # get heat threshold
         heat_threshold_value = input$heat_threshold_pop
-        
+
         values(city_lst_mask_threshold)[values(city_lst_mask_threshold) <= heat_threshold_value] = 0
         values(city_lst_mask_threshold)[values(city_lst_mask_threshold) > heat_threshold_value] = 1
-        
-        
+
+
         # filter population category
         selected_population = input$Category_pop
-        
+
         # get filtered population category
         city_pop_mask = read.pop.category(pop_category = selected_population,
                                           city_boundary = city_boundary,
                                           selected_city = selected_city,
                                           data_source = "local")
-        
+
         # create exposed population raster
         city_pop_heat_exposure = city_pop_mask * city_lst_mask_threshold
-        
+
         # pop exposure classification
         city_pop_heat_exposure_dist = values(city_pop_heat_exposure)[!is.na(values(city_pop_heat_exposure))]
         city_pop_heat_exposure_dist = city_pop_heat_exposure_dist[city_pop_heat_exposure_dist>0]
-        
+
         city_pop_heat_exposure_median = median(city_pop_heat_exposure_dist)
-        
+
         # create classification matrix
         m <- cbind(from = c(-Inf, 0, city_pop_heat_exposure_median),
                    to = c(0, city_pop_heat_exposure_median, Inf),
                    becomes = c(0, 1, 2))
-        
+
         city_pop_heat_exposure_class = reclassify(city_pop_heat_exposure, m)
-        
+
         city_pop_heat_exposure_class = raster::mask(city_pop_heat_exposure_class,city_boundary)
-        
-        
+
+
         # prepare map
-        
+
         pal_Grid <- colorNumeric("RdYlBu",
                                  values(city_lst_mask),
                                  na.color = "transparent",
                                  reverse = TRUE)
-        
+
         pal_Grid_pop <- colorNumeric("RdYlBu",
                                      values(city_pop_mask),
                                      na.color = "transparent",
                                      reverse = TRUE)
-        
+
         pal_Grid_pop_exposure <- colorNumeric("RdYlBu",
                                               values(city_pop_heat_exposure),
                                               na.color = "transparent",
                                               reverse = TRUE)
-        
+
         pal_Grid_pop_exposure_class <- colorFactor(c("green","yellow","red"),
                                                    levels = c(0,1,2),
                                                    na.color = "transparent")
-        
+
         # plot map
         leafletProxy(mapId = "Map_plot_pop", data = filtereData())  %>%
             # Base groups
@@ -719,7 +716,7 @@ server <- function(input, output, session) {
         output$pop_exposure_ratio <- renderText({
             paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", pop_exposure_ratio, "%")
         })
-        
+
         
         
         ### plot table ----
