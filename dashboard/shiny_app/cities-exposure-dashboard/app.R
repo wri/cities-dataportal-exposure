@@ -298,16 +298,16 @@ server <- function(input, output, session) {
     })
     
     # # #update sector list depending on selected city
-    # observeEvent(
-    #     input$City,
-    #     updateSliderInput(session, 
-    #                       inputId = "heat_threshold", 
-    #                       value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-    #                       min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-    #                       max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-    #                       step = 1
-    #     )
-    # )
+    observeEvent(
+        input$City,
+        updateSliderInput(session,
+                          inputId = "heat_threshold",
+                          value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                          min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                          max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                          step = 1
+        )
+    )
     
     
     ### reactive plots definition ----
@@ -334,13 +334,13 @@ server <- function(input, output, session) {
                    gcom_sector_name %in% selected_sector) 
         
         # update slider values based on selected city
-        updateSliderInput(session, 
-                          inputId = "heat_threshold", 
-                          value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                          min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                          max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                          step = 1
-        )
+        # updateSliderInput(session,
+        #                   inputId = "heat_threshold",
+        #                   value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+        #                   min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+        #                   max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+        #                   step = 1
+        # )
         
         
         
