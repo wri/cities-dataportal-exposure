@@ -208,10 +208,15 @@ ui = navbarPage("City-Dashboard",
                              column(8, 
                                     div(style = "background-color: red; width: 100%; height: 100%;"),
                                     tabsetPanel(type = "tabs",
-                                                ### Map plot 
-                                                tabPanel("Amenities exposure", leafletOutput("Map_plot", height = 600)),
-                                                ### timeseirs plot 
-                                                tabPanel("Sector exposure", plotlyOutput("Sector_plot", height = 600))
+                                                ### Amenity exposure Map plot 
+                                                tabPanel("Amenities exposure", 
+                                                         leafletOutput("Map_plot", height = 600)),
+                                                ### sector exposure bar plot 
+                                                tabPanel("Sector exposure", 
+                                                         plotlyOutput("Sector_plot", height = 600)),
+                                                ### Narrative summary 
+                                                tabPanel("Narrative summary", 
+                                                         htmlOutput("amenity_exposure_narrative", height = 600))
                                     )
                              )
                          ),
@@ -251,7 +256,7 @@ ui = navbarPage("City-Dashboard",
                                     
                                     
                              ),
-                             ### Specify plots ----
+                             ### Specify poulation exposure plots ----
                              column(8,
                                     div(style = "background-color: red; width: 100%; height: 100%;"),
                                     tabsetPanel(type = "tabs",
@@ -308,6 +313,18 @@ server <- function(input, output, session) {
                           step = 1
         )
     )
+    
+    observeEvent(
+        input$City,
+        updateSliderInput(session,
+                          inputId = "heat_threshold_pop",
+                          value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                          min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                          max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                          step = 1
+        )
+    )
+    
     
     
     ### reactive plots definition ----
@@ -475,13 +492,13 @@ server <- function(input, output, session) {
         ### Population ----
         
         # update slider values based on selected city
-        updateSliderInput(session, 
-                          inputId = "heat_threshold_pop", 
-                          value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                          min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                          max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                          step = 1
-        )
+        # updateSliderInput(session, 
+        #                   inputId = "heat_threshold_pop", 
+        #                   value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+        #                   min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+        #                   max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+        #                   step = 1
+        # )
         
         
         # filter heat threshold
@@ -718,6 +735,34 @@ server <- function(input, output, session) {
         pop_exposure_ratio = round(cellStats(city_pop_heat_exposure, sum)/cellStats(city_pop_mask, sum),2)*100
         output$pop_exposure_ratio <- renderText({
             paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", pop_exposure_ratio, "%")
+        })
+        
+        # amenity exposure narrative summary ----
+        
+        # remove "residential" and "others" from sector exposure table
+        city_amenity_sector_exposure = city_amenity_sector_exposure %>% 
+            filter(!gcom_sector_name %in% c("Other","Residential")) %>% 
+            mutate(percent_exposed_amenities = round(nb_exposed_amenities_amenity_threshold/nb_amenities,2)*100)
+            
+
+
+        # plot narrative
+        output$amenity_exposure_narrative <- renderText({
+            paste("<center>","<font size=5px; weight=500; color=\"#454545\"><b>",
+                  "Physical assets in",
+                  "<font color=\"#1E90FF\"><b>", selected_city, 
+                  "<font color=\"#454545\"><b>","are situated in area with average heat value of", 
+                  "<font color=\"#1E90FF\"><b>", selected_amenities_avg_heat, "°C", 
+                  "<font color=\"#454545\"><b>","(higher than the average heat within the city area).","<br>",
+                  "<font color=\"#454545\"><b>","The most exposed sectors are:",
+                  "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure$gcom_sector_name[1], 
+                  "<font color=\"#454545\"><b>","and", 
+                  "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure$gcom_sector_name[2],
+                  "<font color=\"#454545\"><b>","with respectively: ", 
+                  "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure[1, "percent_exposed_amenities"],"%",
+                  "<font color=\"#454545\"><b>","and",
+                  "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure[2, "percent_exposed_amenities"],"%",
+                  "<font color=\"#454545\"><b>","of services sites exposed to above average heat.")
         })
         
         
