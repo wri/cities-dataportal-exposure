@@ -25,12 +25,17 @@ library(DT)
 boundary <- st_read("https://storage.googleapis.com/data_portal_exposure/data/administrative_boundaries/mapped/cities_boundaries.geojson",
                     quiet = TRUE)
 
+print("boundary")
+print(head(boundary))
 
 ########### Load amenity data ----
 
 amenity_exposure_lst = read.csv("https://storage.googleapis.com/data_portal_exposure/data/indicators/amenity_exposure_lst.csv",
                                 encoding = "UTF-8")
 
+
+print("amenity_exposure_lst")
+print(head(amenity_exposure_lst))
 # define filter values ----
 
 # compute average heat of all amenities
@@ -53,10 +58,6 @@ slider_value_heat = round(mean(amenity_exposure_lst$exposure_lst_mean))
 slider_step = 1
 
 
-# define city for prototype
-# selected_city_id = "CHL-Vitacura"
-# selected_city_id = "PHL-Makati"
-# selected_city_id = "AUS-Hobart"
 
 ### read land surface temperature ----
 
@@ -171,7 +172,7 @@ ui = navbarPage("City-Dashboard",
                                                 width = '100%'
                                     ),
                                     
-                                    ### Specify Datasource 
+                                    ### Specify Amenity sectors 
                                     selectInput(inputId = "Sector", 
                                                 label = "Select your sectors of interest", 
                                                 choices = available_amenity_sectors,
@@ -180,44 +181,52 @@ ui = navbarPage("City-Dashboard",
                                                 width = '100%'
                                     ),
                                     
-                                    # slider
-                                    sliderInput(inputId = 'heat_threshold', 
-                                                label = 'Select heat value threshold', 
-                                                min = slider_min_heat, 
-                                                max = slider_max_heat, 
-                                                value = slider_value_heat, 
-                                                step = slider_step,
-                                                width = '100%'),
-                                    
                                     # Main indicators
                                     
-                                    h4("Amenity average heat value:"),
+                                    h5("Amenity average heat value (selected sectors):"),
                                     htmlOutput("selected_amenities_avg_heat"),
                                     
-                                    h4("Selected amenities average deviation:"),
+                                    h5("Selected amenities heat deviation from all amenities:"),
                                     htmlOutput("selected_amenities_deviation_heat_value"),
                                     
-                                    h4("Selected amenities deviation ratio:"),
+                                    h5("Selected amenities heat deviation ratio from all amenities:"),
                                     htmlOutput("selected_amenities_deviation_heat_ratio"),
                                     
-                                    
-                                    
+                                    # slider
+                                    # sliderInput(inputId = 'heat_threshold', 
+                                    #             label = 'Select heat value threshold', 
+                                    #             min = slider_min_heat, 
+                                    #             max = slider_max_heat, 
+                                    #             value = slider_value_heat, 
+                                    #             step = slider_step,
+                                    #             width = '100%'),
+
                                     
                              ),
                              ### Specify plots ----
                              column(8, 
                                     div(style = "background-color: red; width: 100%; height: 100%;"),
+                                    # tab outputs
                                     tabsetPanel(type = "tabs",
                                                 ### Amenity exposure Map plot 
                                                 tabPanel("Amenities exposure", 
-                                                         leafletOutput("Map_plot", height = 600)),
+                                                         leafletOutput("Map_plot", height = 550)),
                                                 ### sector exposure bar plot 
                                                 tabPanel("Sector exposure", 
-                                                         plotlyOutput("Sector_plot", height = 600)),
+                                                         plotlyOutput("Sector_plot", height = 550)),
                                                 ### Narrative summary 
                                                 tabPanel("Narrative summary", 
-                                                         htmlOutput("amenity_exposure_narrative", height = 600))
-                                    )
+                                                         htmlOutput("amenity_exposure_narrative", height = 550),
+                                                         h1("-"))
+                                    ),
+                                    # slider
+                                    sliderInput(inputId = 'heat_threshold', 
+                                                label = 'Customize heat value threshold (default value = average amenities heat)', 
+                                                min = slider_min_heat, 
+                                                max = slider_max_heat, 
+                                                value = slider_value_heat, 
+                                                step = slider_step,
+                                                width = '100%')
                              )
                          ),
                          
@@ -349,17 +358,7 @@ server <- function(input, output, session) {
         city_amenity = amenity_exposure_lst %>%
             filter(city_id == selected_city,
                    gcom_sector_name %in% selected_sector) 
-        
-        # update slider values based on selected city
-        # updateSliderInput(session,
-        #                   inputId = "heat_threshold",
-        #                   value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-        #                   min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-        #                   max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-        #                   step = 1
-        # )
-        
-        
+
         
         # get heat threshold
         heat_threshold_value = input$heat_threshold
@@ -446,12 +445,18 @@ server <- function(input, output, session) {
                              label = labels_amenity,
                              group = "Amenity exposure class") %>%
             # Legend for amenity heat deviation ratio from threshold class
-            addLegend(pal = pal_amenity_class,
-                      values = ~vec_exposure_class,
+            # addLegend(pal = pal_amenity_class,
+            #           values = ~vec_exposure_class,
+            #           opacity = 0.9,
+            #           title = "Amenity exposure level</br>(Devitaion ratio from heat threshold %)",
+            #           position = "topright",
+            #           labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
+            # Legend for amenity heat deviation ratio from threshold class
+            addLegend(colors = c("green","yellow","red"),
+                      labels = c("0-Low (< 0%)","1-Moderate (< 10%)","2-High (> 10%)"),
                       opacity = 0.9,
-                      title = "Amenity exposure level",
-                      position = "topright",
-                      labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
+                      title = "Amenity exposure level</br>(Devitaion ratio from heat threshold %)",
+                      position = "topright") %>%
             # plot boundary
             addPolygons(data = city_boundary,
                         group = "Administrative boundaries",
@@ -490,15 +495,6 @@ server <- function(input, output, session) {
             )
         
         ### Population ----
-        
-        # update slider values based on selected city
-        # updateSliderInput(session, 
-        #                   inputId = "heat_threshold_pop", 
-        #                   value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-        #                   min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-        #                   max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-        #                   step = 1
-        # )
         
         
         # filter heat threshold
@@ -651,19 +647,40 @@ server <- function(input, output, session) {
                       lst_min = min(exposure_lst_mean),
                       lst_mean = mean(exposure_lst_mean),
                       lst_max =  max(exposure_lst_mean),
-                      nb_exposed_amenities_amenity_threshold = length(exposure_lst_mean[exposure_lst_mean>heat_threshold_value]),
-                      deviation_amenity_threshold = mean(deviation_from_threshold)) %>% 
+                      # nb_exposed_amenities_amenity_threshold = length(exposure_lst_mean[exposure_lst_mean>heat_threshold_value]),
+                      nb_exposed_amenities_amenity_threshold = length(deviation_from_threshold[deviation_from_threshold>0]),
+                      deviation_amenity_threshold = mean(deviation_from_threshold))  
+            # mutate(exposure_class =
+            #            case_when(deviation_amenity_threshold <= 0 ~ "Low", 
+            #                      deviation_amenity_threshold <= 5 ~ "Moderate",
+            #                      deviation_amenity_threshold > 5 ~ "High")
+            # ) %>% 
+            # mutate(exposure_color =
+            #            case_when(exposure_class == "Low" ~ "green", 
+            #                      exposure_class == "Moderate" ~ "orange",
+            #                      exposure_class == "High" ~ "red")
+            # ) %>% 
+            # arrange(desc(deviation_amenity_threshold))
+        
+        city_amenity_sector_exposure = city_amenity_sector_exposure %>% 
+            mutate(percent_exposed_amenities =round((nb_exposed_amenities_amenity_threshold/nb_amenities)*100,2)) %>% 
             mutate(exposure_class =
-                       case_when(deviation_amenity_threshold <= 0 ~ "Low", 
-                                 deviation_amenity_threshold <= 5 ~ "Moderate",
-                                 deviation_amenity_threshold > 5 ~ "High")
+                       case_when(percent_exposed_amenities <= 50 ~ "Low", 
+                                 percent_exposed_amenities <= 75 ~ "Moderate",
+                                 percent_exposed_amenities > 75 ~ "High")
             ) %>% 
             mutate(exposure_color =
                        case_when(exposure_class == "Low" ~ "green", 
                                  exposure_class == "Moderate" ~ "orange",
                                  exposure_class == "High" ~ "red")
             ) %>% 
-            arrange(desc(deviation_amenity_threshold))
+            arrange(desc(percent_exposed_amenities))
+        
+        print("city_amenity")
+        print(head(city_amenity))
+        
+        print("city_amenity_sector_exposure")
+        print(city_amenity_sector_exposure)
         
         city_amenity_sector_exposure$gcom_sector_name <- factor(city_amenity_sector_exposure$gcom_sector_name, 
                                                                 levels = unique(city_amenity_sector_exposure$gcom_sector_name)[order(city_amenity_sector_exposure$deviation_amenity_threshold, decreasing = TRUE)])
@@ -672,19 +689,20 @@ server <- function(input, output, session) {
         
         output$Sector_plot <- renderPlotly({
             
-            fig = city_amenity_sector_exposure %>% 
-                arrange(desc(deviation_amenity_threshold)) %>% 
-                plot_ly() %>% 
-                add_trace(x = ~gcom_sector_name, 
-                          y = ~deviation_amenity_threshold, 
+            fig = city_amenity_sector_exposure %>%
+                arrange(desc(deviation_amenity_threshold)) %>%
+                plot_ly() %>%
+                add_trace(x = ~gcom_sector_name,
+                          y = ~deviation_amenity_threshold,
                           type = "bar",
                           orientation = "v",
                           marker = list(color = exposure_color),
-                          text = ~paste("Deviation ratio: ", deviation_amenity_threshold, '<br>Sector name:', gcom_sector_name)) %>% 
-                layout(yaxis = list(title = 'Heat deviation ratio from all amenities (%)'), 
+                          text = ~paste("Deviation ratio: ", deviation_amenity_threshold, '<br>Sector name:', gcom_sector_name)) %>%
+                layout(yaxis = list(title = 'Heat deviation ratio from all amenities (%)'),
                        xaxis = list(title = ''),
                        barmode = 'stack',
                        legend = list(orientation = 'h', x = 0.2, y = -0.5))
+            
             
             fig
         })
@@ -749,10 +767,11 @@ server <- function(input, output, session) {
         # plot narrative
         output$amenity_exposure_narrative <- renderText({
             paste("<center>","<font size=5px; weight=500; color=\"#454545\"><b>",
-                  "Physical assets in",
+                  "<font color=\"#1E90FF\"><b>", round(mean(city_amenity_sector_exposure$percent_exposed_amenities),2), 
+                  "<font color=\"#454545\"><b>","% of physical assets in",
                   "<font color=\"#1E90FF\"><b>", selected_city, 
-                  "<font color=\"#454545\"><b>","are situated in area with average heat value of", 
-                  "<font color=\"#1E90FF\"><b>", selected_amenities_avg_heat, "°C", 
+                  "<font color=\"#454545\"><b>","are situated in area of above average heat value", 
+                  "<font color=\"#1E90FF\"><b>", "(",selected_amenities_avg_heat, "°C)", 
                   "<font color=\"#454545\"><b>","(higher than the average heat within the city area).","<br>",
                   "<font color=\"#454545\"><b>","The most exposed sectors are:",
                   "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure$gcom_sector_name[1], 
@@ -780,15 +799,21 @@ server <- function(input, output, session) {
                           "Average heat value" = lst_mean,
                           "Max heat value" = lst_max,
                           "Number of exposed amenities" = nb_exposed_amenities_amenity_threshold,
+                          "Percent of exposed amenties" = percent_exposed_amenities,
                           "average deviation ratio" = deviation_amenity_threshold,
                           "Exposure category" = exposure_class)
+        
+        print("city_amenity_sector_exposure_plot")
+        plot(city_amenity_sector_exposure_plot)
         
         
         output$table_amenity <- DT::renderDataTable(
             DT::datatable(city_amenity_sector_exposure_plot, 
                           options = list(pageLength = 25)) %>% formatStyle(
-                              "average deviation ratio", target = "row", 
-                              backgroundColor = styleInterval(c(0, 5,20), c("lightgreen", "yellow", "orange", "red")),
+                              # "average deviation ratio", target = "row", 
+                              # backgroundColor = styleInterval(c(0, 5,20), c("lightgreen", "yellow", "orange", "red")),
+                              "Percent of exposed amenties", target = "row", 
+                              backgroundColor = styleInterval(c(0, 50, 75), c("lightgreen", "yellow", "orange", "red")),
                               fontWeight = 'bold')
             
         )
