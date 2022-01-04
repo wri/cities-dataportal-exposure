@@ -248,16 +248,37 @@ $$ExposureIndex_{cell} = \frac {ExposureLevel_{cell} - min(ExposureLevel_{city})
 
 - **Layer 1: Land Surface Temperature:** 
 
-This layer shows the spatial distribution of land surface temperature within the city boundary at 30m resolution.
+This layer shows the spatial distribution of land surface temperature within the city boundary at 30m resolution. 
 
 - **Layer 2: Amenity exposure value:**
 
-- **Layer 2: Amenity exposure class:**
+This layer shows the heat value corresponding to the amenities positions (based on land surface temperature layer).
+
+- **Layer 3: Amenity exposure class:**
+
+This layer shows amenities' exposure classification based on the deviation ratio of the user' selected heat threshold. Three classes are proposed: `Low` (amenities are located in area with lower heat value than heat threshold), `Moderate` (amenities are located in area with heat deviation ratio up to 10% higher than heat threshold), and `high` (amenities are located in area with heat deviation ratio 10% higher than heat threshold).
 
 
 #### Amenity exposure table
 
+This table provides summary statistics on sectors' exposure to heat hazard. 
+
+| field name | field description |
+| ---- | ----- |
+| sector name | Name of the sector based on GCOM categories |
+| Number of amenities | Number of amenities by sector |
+| Min heat value | Minimum heat value by sector |
+| Max heat value | Maximum heat value by sector |
+| Average heat value | Average heat value by sector |
+| Number of exposed amenities | Number of amenities exposed to higher heat values than the selected heat threshold  |
+| Percent of exposed amenities | Percent of amenities exposed to higher heat values than the selected threshold  |
+| Average deviation ratio | Average deviation ratio from heat threshold by sector  |
+| Exposure category | Classification of sectors' exposure based on the average deviation ratio.  |
+
+
 #### Sector exposure bar chart
+
+This bar chart shows 
 
 #### Narrative summary
 
