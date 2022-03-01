@@ -1,0 +1,116 @@
+---
+title: "collect-heat-city"
+output: html_document
+---
+
+# Collect heat
+
+```{java collect-heat-gee, warning=FALSE, message=FALSE, echo = TRUE,  eval = FALSE}
+// --------------------------------------------------------------------------------
+// Get city boundaries  
+// --------------------------------------------------------------------------------
+
+/*var city_boundaries = ee.FeatureCollection("users/saifshabou/dataportal/boundaries/CHL-vitacura")*/
+/*var city_boundaries = ee.FeatureCollection("users/saifshabou/dataportal/boundaries/PHL-makati")*/
+var city_boundaries = ee.FeatureCollection("users/saifshabou/dataportal/boundaries/AUS-hobart")
+
+print("city_boundaries",city_boundaries)
+
+/*var city_id = 'CHL-Vitacura' */
+/*var city_id = 'PHL-Makati' */
+var city_id = 'AUS-Hobart' 
+
+// Filter city data
+  
+var AOI_boundaries = 
+  city_boundaries.filterMetadata('city_id','equals',city_id)
+  
+print("AOI_boundaries", AOI_boundaries)
+
+
+// ---------------------------------------------------------------------------------
+// Get LST data within city boundaries  
+// ----------------------------------------------------------------------------------
+
+// link to the code that computes the Landsat LST
+var LandsatLST = require('users/emackres/DataPortal:/Landsat_LST.js');
+var cloudmask = require('users/emackres/DataPortal:/cloudmask.js');
+
+// select region of interest, date range, and landsat satellite
+var satellite = 'L8';
+var date_start = '2018-01-01';
+var date_end = '2021-08-30';
+var month_start = 1; // vitacura = 1 ; Makati = 4
+var month_end = 3; // vitacura = 3 ; Makati = 6
+var use_ndvi = true;
+
+// get landsat collection with added variables: NDVI, FVC, TPW, EM, LST
+var LandsatColl = LandsatLST.collection(satellite, date_start, date_end, AOI_boundaries, use_ndvi)
+  .filter(ee.Filter.calendarRange(month_start, month_end, 'month'));
+
+print("LandsatColl",LandsatColl);
+
+// Compute LST average value for the selected period
+var LSTmean = LandsatColl.select('LST').reduce(ee.Reducer.mean()).subtract(273.15);
+print("LSTmean", LSTmean);
+
+// --------------------------------------------------------------------------------
+// Viz 
+// --------------------------------------------------------------------------------
+
+// Specify visualization parameters
+var BACKGROUND='SATELLITE';
+var ZOOM=15;
+Map.setOptions(BACKGROUND);
+Map.centerObject(city_boundaries,ZOOM);
+
+// Plot LST data within city boundary
+var cmap1 = ['blue', 'cyan', 'green', 'yellow', 'red'];
+Map.addLayer(LSTmean,{min:20, max:45, palette:cmap1}, 'Mean land surface temperature C',false);
+
+// Plot city boundary
+var empty = ee.Image().byte();
+var AOIimage = empty.paint({
+  featureCollection: AOI_boundaries,
+  width: 2
+});
+Map.addLayer(AOIimage,{palette:['black']},'Area of interest');
+
+// --------------------------------------------------------------------------------
+// Export output  
+// --------------------------------------------------------------------------------
+
+var assetId = 'users/saifshabou/dataportal/lst/lst_mean/lst_'+city_id;
+var task_description = 'export_lst_data_'+city_id;
+var fileName = "data/land_surface_temperature/lst_mean/lst_"+city_id;
+
+print("assetId", assetId);
+
+// Export the image to an Earth Engine asset.
+/*Export.image.toAsset({
+   image: LSTmean,
+   description: task_description,
+   region : AOI_boundaries,
+   assetId: assetId,
+   scale: 30
+});*/
+
+// Export the image to Cloud Storage.
+/*Export.image.toCloudStorage({
+  image: LSTmean,
+  description: task_description,
+  bucket: 'data_portal_exposure',
+  fileNamePrefix: fileName,
+  region: AOI_boundaries,
+  scale: 30,
+  fileFormat: 'GeoTIFF',
+  maxPixels: 1e9,
+  formatOptions: {
+    cloudOptimized: true
+  }
+});*/
+
+
+
+```
+
