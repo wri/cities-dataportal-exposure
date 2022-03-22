@@ -134,7 +134,7 @@ read.pop.category =  function(pop_category, city_boundary, selected_city, data_s
 # load flooding data ----
 
 # filter data
-# selected_city = "CHL-Vitacura"
+selected_city = "CHL-Vitacura"
 
 
 # filter boundary data
