@@ -5,9 +5,9 @@ account: wri-cities
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5079060
-bundleId: 5477005
+bundleId: 5694452
 url: https://wri-cities.shinyapps.io/cities-exposure-dashboard/
-when: 1642424681.50321
-lastSyncTime: 1642424681.50321
+when: 1647505209.89017
+lastSyncTime: 1647505209.89017
 asMultiple: FALSE
 asStatic: FALSE

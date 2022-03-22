@@ -25,8 +25,6 @@ library(DT)
 boundary <- st_read("https://storage.googleapis.com/data_portal_exposure/data/administrative_boundaries/mapped/cities_boundaries.geojson",
                     quiet = TRUE)
 
-print("boundary")
-print(head(boundary))
 
 ########### Load amenity data ----
 
@@ -34,8 +32,7 @@ amenity_exposure_lst = read.csv("https://storage.googleapis.com/data_portal_expo
                                 encoding = "UTF-8")
 
 
-print("amenity_exposure_lst")
-print(head(amenity_exposure_lst))
+
 # define filter values ----
 
 # compute average heat of all amenities
@@ -47,6 +44,7 @@ available_cities = unique(amenity_exposure_lst$city_name)
 available_cities = c("PHL-Makati", "CHL-Vitacura", "AUS-Hobart")
 # define available sectors
 available_amenity_sectors = unique(amenity_exposure_lst$gcom_sector_name)
+available_amenity_sectors = available_amenity_sectors[!available_amenity_sectors %in% c("Residential","Other")]
 # define available population categories
 available_pop_categories = c("All", "Young (<20)", "Elderly (>60)", "Men", "Women")
 available_pop_categories = available_amenity_sectors
@@ -57,7 +55,20 @@ slider_max_heat = round(max(amenity_exposure_lst$exposure_lst_mean))
 slider_value_heat = round(mean(amenity_exposure_lst$exposure_lst_mean))
 slider_step = 1
 
+# function to check value
+check_value = function(value){
+    if(value >= 0){sign = "+"}
+    else if(value < 0){sign = "-"}
+    
+    return(sign)
+}
 
+# check_value_color = function(value){
+#     if(value >= 0){color = "#FC1A03"}
+#     else if(value < 0){color = "#0309FC"}
+#     
+#     return(color)
+# }
 
 ### read land surface temperature ----
 
@@ -77,7 +88,6 @@ read.lst = function(selected_city, city_boundary, data_source){
                               sep = "")
     }
     
-    print(city_lst_path)
     
     # collect raster data
     city_lst = raster(city_lst_path)
@@ -119,7 +129,6 @@ read.pop.category =  function(pop_category, city_boundary, selected_city, data_s
     }
     
     
-    print(city_pop_path)
     # collect raster data
     city_pop = raster(city_pop_path)
     city_pop[is.na(city_pop)] <- 0
@@ -134,7 +143,7 @@ read.pop.category =  function(pop_category, city_boundary, selected_city, data_s
 
 # UI ------------
 
-ui = navbarPage("City-Dashboard",
+ui = navbarPage("City Climate Hazard Exposure Tool",
                 id = "active_tab",
                 
                 ### Amenity exposure panel ----
@@ -148,7 +157,7 @@ ui = navbarPage("City-Dashboard",
                                     
                                     ### Specify scale 
                                     selectInput(inputId = "City", 
-                                                label = "Select your city", 
+                                                label = "Select city", 
                                                 choices = available_cities,
                                                 selected = "PHL-Makati",
                                                 width = '100%'
@@ -174,7 +183,7 @@ ui = navbarPage("City-Dashboard",
                                     
                                     ### Specify Amenity sectors 
                                     selectInput(inputId = "Sector", 
-                                                label = "Select your sectors of interest", 
+                                                label = "Select sectors of interest", 
                                                 choices = available_amenity_sectors,
                                                 selected = available_amenity_sectors,
                                                 multiple = TRUE,
@@ -183,24 +192,15 @@ ui = navbarPage("City-Dashboard",
                                     
                                     # Main indicators
                                     
-                                    h5("Amenity average heat value (selected sectors):"),
+                                    h5("Average site temperature (selected sectors):"),
                                     htmlOutput("selected_amenities_avg_heat"),
                                     
-                                    h5("Selected amenities heat deviation from all amenities:"),
+                                    h5("Selected sector(s) temperature deviation from city average:"),
                                     htmlOutput("selected_amenities_deviation_heat_value"),
                                     
-                                    h5("Selected amenities heat deviation ratio from all amenities:"),
+                                    # h5("Selected sector(s) temperature deviation ratio from city average:"),
                                     htmlOutput("selected_amenities_deviation_heat_ratio"),
                                     
-                                    # slider
-                                    # sliderInput(inputId = 'heat_threshold', 
-                                    #             label = 'Select heat value threshold', 
-                                    #             min = slider_min_heat, 
-                                    #             max = slider_max_heat, 
-                                    #             value = slider_value_heat, 
-                                    #             step = slider_step,
-                                    #             width = '100%'),
-
                                     
                              ),
                              ### Specify plots ----
@@ -209,13 +209,13 @@ ui = navbarPage("City-Dashboard",
                                     # tab outputs
                                     tabsetPanel(type = "tabs",
                                                 ### Amenity exposure Map plot 
-                                                tabPanel("Amenities exposure", 
+                                                tabPanel("Site exposure", 
                                                          leafletOutput("Map_plot", height = 550)),
                                                 ### sector exposure bar plot 
                                                 tabPanel("Sector exposure", 
                                                          plotlyOutput("Sector_plot", height = 550)),
                                                 ### Narrative summary 
-                                                tabPanel("Narrative summary", 
+                                                tabPanel("Amenity summary", 
                                                          htmlOutput("amenity_exposure_narrative", height = 550),
                                                          h1("-"))
                                     ),
@@ -233,7 +233,13 @@ ui = navbarPage("City-Dashboard",
                          
                          ## Second row ----
                          fluidRow(
-                             column(12, offset = 0, h4("Observations"), DT::dataTableOutput("table_amenity"))
+                             column(12, offset = 0, h4("Amenity Sector Details"), DT::dataTableOutput("table_amenity")),
+                             
+                             downloadButton(outputId = "download_amenity_exposure", 
+                                            label = "Download amenity exposure data"),
+                             
+                             downloadButton(outputId = "download_sector_exposure", 
+                                            label = "Download sectors' exposure data")
                          )
                 ),
                 ## Population exposure panel ----
@@ -245,19 +251,11 @@ ui = navbarPage("City-Dashboard",
                              column(3,
                                     
                                     ### Specify population of interest
-                                    radioButtons(inputId = "Category_pop",
+                                    selectInput(inputId = "Category_pop",
                                                  label = "Select population category",
                                                  choices = c("All", "Elderly", "Children", "Women"),
                                                  selected = "All"
                                     ),
-                                    
-                                    # sliderInput(inputId = 'heat_threshold_pop',
-                                    #             label = 'Select heat value threshold',
-                                    #             min = slider_min_heat,
-                                    #             max = slider_max_heat,
-                                    #             value = slider_value_heat,
-                                    #             step = slider_step,
-                                    #             width = '100%'),
                                     
                                     
                                     h4("Percent of exposed population:"),
@@ -270,15 +268,15 @@ ui = navbarPage("City-Dashboard",
                                     div(style = "background-color: red; width: 100%; height: 100%;"),
                                     tabsetPanel(type = "tabs",
                                                 ### Map plot
-                                                tabPanel("Population exposure map", 
+                                                tabPanel("Residential exposure", 
                                                          leafletOutput("Map_plot_pop", 
                                                                        height = 600)),
                                                 ### timeseirs plot
-                                                tabPanel("Population categories' exposure", 
+                                                tabPanel("Category exposure", 
                                                          plotlyOutput("Sector_plot_pop",
                                                                       height = 600)),
                                                 ### Narrative summary 
-                                                tabPanel("Narrative summary", 
+                                                tabPanel("Population summary", 
                                                          htmlOutput("pop_exposure_narrative", 
                                                                     height = 550),
                                                          h1("-"))
@@ -431,7 +429,6 @@ server <- function(input, output, session) {
         leafletProxy(mapId = "Map_plot", data = filtereData())  %>%
             # Base groups
             addTiles(group = "OSM (default)") %>%
-            addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB") %>%
             addTiles() %>%
             clearControls() %>%
             clearShapes() %>%
@@ -450,7 +447,7 @@ server <- function(input, output, session) {
             addLegend(pal = pal_amenity, 
                       values = ~exposure_lst_mean, 
                       opacity = 0.9,
-                      title = "Amenity heat value",
+                      title = "Amenity heat value (°C)",
                       position = "bottomright",
                       labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
             # Plot amenities with heat deviation ratio from selected threshold class
@@ -464,13 +461,6 @@ server <- function(input, output, session) {
                              popup = ~as.character(city_name),
                              label = labels_amenity,
                              group = "Amenity exposure class") %>%
-            # Legend for amenity heat deviation ratio from threshold class
-            # addLegend(pal = pal_amenity_class,
-            #           values = ~vec_exposure_class,
-            #           opacity = 0.9,
-            #           title = "Amenity exposure level</br>(Devitaion ratio from heat threshold %)",
-            #           position = "topright",
-            #           labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
             # Legend for amenity heat deviation ratio from threshold class
             addLegend(colors = c("green","yellow","red"),
                       labels = c("0-Low (< 0%)","1-Moderate (0 < +10%)","2-High (> +10%)"),
@@ -503,11 +493,10 @@ server <- function(input, output, session) {
             addLegend(pal = pal_amenity, 
                       values = ~exposure_lst_mean, 
                       opacity = 0.9,
-                      title = "Land Surface Temperature",
+                      title = "Land Surface Temperature (°C)",
                       position = "bottomleft",
                       labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>% 
             addLayersControl(
-                baseGroups = c("OSM (default)", "CartoDB"),
                 overlayGroups = c("Amenity exposure value", 
                                   "Land Surface Temperature",
                                   "Amenity exposure class"),
@@ -545,6 +534,10 @@ server <- function(input, output, session) {
         
         city_pop_heat_exposure_median = median(city_pop_heat_exposure_dist)
         
+        # pop_category_median_heat = values(city_pop_mask)[!is.na(values(city_pop_mask))]
+        # pop_category_median_heat = median(pop_category_median_heat)
+        # print(paste("pop_category_median_heat", pop_category_median_heat, sep = " "))
+        
         # create classification matrix
         m <- cbind(from = c(-Inf, 0, city_pop_heat_exposure_median),
                    to = c(0, city_pop_heat_exposure_median, Inf),
@@ -580,7 +573,6 @@ server <- function(input, output, session) {
         leafletProxy(mapId = "Map_plot_pop", data = filtereData())  %>%
             # Base groups
             addTiles(group = "OSM (default)") %>%
-            addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB") %>%
             addTiles() %>%
             clearControls() %>%
             clearShapes() %>%
@@ -610,7 +602,7 @@ server <- function(input, output, session) {
             addLegend(pal = pal_Grid_pop,
                       values = ~values(city_pop_mask),
                       opacity = 0.9,
-                      title = "Population count",
+                      title = "Population count (per km2)",
                       position = "bottomright") %>%
             # plot Heat distribution raster
             addRasterImage(city_lst_mask,
@@ -622,21 +614,9 @@ server <- function(input, output, session) {
             addLegend(pal = pal_Grid,
                       values = ~values(city_lst_mask),
                       opacity = 0.9,
-                      title = "Land Surface Temperature",
+                      title = "Land Surface Temperature (°C)",
                       position = "bottomleft",
                       labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
-            # # plot Population exposure distribution raster
-            # addRasterImage(city_pop_heat_exposure,
-            #                colors = pal_Grid_pop_exposure,
-            #                opacity = 0.7,
-            #                group = "Population exposure",
-            #                maxBytes = 8 * 1024 * 1024) %>%
-            # # Legend for exposure distribution raster
-            # addLegend(pal = pal_Grid_pop_exposure,
-            #           values = ~values(city_pop_heat_exposure),
-            #           opacity = 0.9,
-            #           title = "Population exposure",
-        #           position = "topright") %>%
         # plot Population exposure class raster
         addRasterImage(city_pop_heat_exposure_class,
                        colors = pal_Grid_pop_exposure_class,
@@ -652,7 +632,6 @@ server <- function(input, output, session) {
                       title = "Population exposure",
                       position = "topright") %>%
             addLayersControl(
-                baseGroups = c("OSM (default)", "CartoDB"),
                 overlayGroups = c("Population count",
                                   "Land Surface Temperature",
                                   "Population exposure"),
@@ -686,42 +665,58 @@ server <- function(input, output, session) {
             mutate(percent_exposed_amenities =round((nb_exposed_amenities_amenity_threshold/nb_amenities)*100,2)) %>% 
             mutate(exposure_class =
                        case_when(percent_exposed_amenities <= 50 ~ "Low", 
-                                 percent_exposed_amenities <= 75 ~ "Moderate",
-                                 percent_exposed_amenities > 75 ~ "High")
+                                 percent_exposed_amenities < 75 ~ "Moderate",
+                                 percent_exposed_amenities >= 75 ~ "High")
             ) %>% 
             mutate(exposure_color =
                        case_when(exposure_class == "Low" ~ "green", 
-                                 exposure_class == "Moderate" ~ "orange",
+                                 exposure_class == "Moderate" ~ "yellow",
                                  exposure_class == "High" ~ "red")
             ) %>% 
             arrange(desc(percent_exposed_amenities))
         
-        print("city_amenity")
-        print(head(city_amenity))
-        
-        print("city_amenity_sector_exposure")
-        print(city_amenity_sector_exposure)
-        
+        # deviation 
+        # city_amenity_sector_exposure$gcom_sector_name <- factor(city_amenity_sector_exposure$gcom_sector_name, 
+        #                                                         levels = unique(city_amenity_sector_exposure$gcom_sector_name)[order(city_amenity_sector_exposure$deviation_amenity_threshold, decreasing = TRUE)])
+        # percent of exposed amenities
         city_amenity_sector_exposure$gcom_sector_name <- factor(city_amenity_sector_exposure$gcom_sector_name, 
-                                                                levels = unique(city_amenity_sector_exposure$gcom_sector_name)[order(city_amenity_sector_exposure$deviation_amenity_threshold, decreasing = TRUE)])
+                                                                levels = unique(city_amenity_sector_exposure$gcom_sector_name)[order(city_amenity_sector_exposure$percent_exposed_amenities, decreasing = TRUE)])
+        
         
         exposure_color = city_amenity_sector_exposure$exposure_color
         
+        print(city_amenity_sector_exposure)
+        
         output$Sector_plot <- renderPlotly({
             
+            # fig = city_amenity_sector_exposure %>%
+            #     arrange(desc(deviation_amenity_threshold)) %>%
+            #     plot_ly() %>%
+            #     add_trace(x = ~gcom_sector_name,
+            #               y = ~deviation_amenity_threshold,
+            #               type = "bar",
+            #               orientation = "v",
+            #               marker = list(color = exposure_color),
+            #               text = ~paste("Deviation ratio: ", deviation_amenity_threshold, '<br>Sector name:', gcom_sector_name)) %>%
+            #     layout(yaxis = list(title = 'Heat deviation ratio from all amenities (%)'),
+            #            xaxis = list(title = ''),
+            #            barmode = 'stack',
+            #            legend = list(orientation = 'h', x = 0.2, y = -0.5))
+            
             fig = city_amenity_sector_exposure %>%
-                arrange(desc(deviation_amenity_threshold)) %>%
-                plot_ly() %>%
-                add_trace(x = ~gcom_sector_name,
-                          y = ~deviation_amenity_threshold,
-                          type = "bar",
-                          orientation = "v",
-                          marker = list(color = exposure_color),
-                          text = ~paste("Deviation ratio: ", deviation_amenity_threshold, '<br>Sector name:', gcom_sector_name)) %>%
-                layout(yaxis = list(title = 'Heat deviation ratio from all amenities (%)'),
-                       xaxis = list(title = ''),
-                       barmode = 'stack',
-                       legend = list(orientation = 'h', x = 0.2, y = -0.5))
+              arrange(desc(percent_exposed_amenities)) %>%
+              plot_ly() %>%
+              add_trace(x = ~gcom_sector_name,
+                        y = ~percent_exposed_amenities,
+                        type = "bar",
+                        orientation = "v",
+                        marker = list(color = exposure_color),
+                        text = ~paste("Percent of exposed amenities: ", percent_exposed_amenities, 
+                                      '<br>Sector name:', gcom_sector_name)) %>%
+              layout(yaxis = list(title = 'Percent of exposed amenities (%)'),
+                     xaxis = list(title = ''),
+                     # barmode = 'stack',
+                     legend = list(orientation = 'h'))
             
             
             fig
@@ -773,18 +768,39 @@ server <- function(input, output, session) {
         # # population group plot ----
         output$Sector_plot_pop <- renderPlotly({
 
+          # fig = pop_exposure_stat %>% 
+          #   arrange(desc(`Percent of exposed population from all population`)) %>% 
+          #   plot_ly() %>% 
+          #   add_trace(x = ~Population.category,
+          #             y = ~`Percent of exposed population from all population`, 
+          #             type = "bar",
+          #             orientation = "v",
+          #             # marker = list(color = 'blue'),
+          #             text = ~paste("Population percent: ",`Population percent`, 
+          #                           '<br>Percent of exposed population from all population:', `Percent of exposed population from all population`)) %>% 
+          #   layout(yaxis = list(title = 'Percent of exposed persons by category (%)'),
+          #          xaxis = list(title = 'Population categories'))
+          
           fig = pop_exposure_stat %>% 
-            arrange(desc(`Percent of exposed population from all population`)) %>% 
-            plot_ly() %>% 
-            add_trace(x = ~Population.category,
-                      y = ~`Percent of exposed population from all population`, 
-                      type = "bar",
-                      orientation = "v",
-                      # marker = list(color = 'blue'),
-                      text = ~paste("Population percent: ",`Population percent`, 
-                                    '<br>Percent of exposed population from all population:', `Percent of exposed population from all population`)) %>% 
-            layout(yaxis = list(title = 'Percent of exposed persons by category (%)'),
-                   xaxis = list(title = 'Population categories'))
+              arrange(desc(`Percent of exposed population from all population`)) %>% 
+              plot_ly() %>% 
+              add_trace(x = ~Population.category,
+                        y = ~`Percent of exposed population from all population`, 
+                        type = "bar",
+                        orientation = "v",
+                        name = 'Percent of exposed persons from <br> (compared to all population)',
+                        text = ~paste("Population percent: ",`Population percent`, 
+                                      '<br>Percent of exposed population from all population:', `Percent of exposed population from all population`)) %>% 
+              add_trace(x = ~Population.category,
+                        y = ~`Percent of exposed population from population category`, 
+                        type = "bar",
+                        orientation = "v",
+                        name = 'Percent of exposed population <br> (compared to population category)',
+                        text = ~paste("Population percent: ",`Population percent`, 
+                                      '<br>Percent of exposed population from all population:', `Percent of exposed population from all population`)) %>% 
+              layout(yaxis = list(title = 'Percent of exposed persons by category (%)'),
+                     xaxis = list(title = 'Population categories'),
+                     barmode = 'group')
           
           fig
         })
@@ -792,6 +808,7 @@ server <- function(input, output, session) {
         ### Main indicators ----
         
         selected_city_lst_value = round(unique(city_amenity$city_lst_avg),2)
+        
         
         # Amenity average heat value ----
         selected_amenities_avg_heat = round(mean(city_amenity$exposure_lst_mean),2)
@@ -801,14 +818,20 @@ server <- function(input, output, session) {
         
         # Selected amenities deviation heat ----
         selected_amenities_deviation_heat_value = round(mean(city_amenity$heat_dev_from_amenities),2) 
+        
+        deviation_sign = check_value(value= selected_amenities_deviation_heat_value)
+        
         output$selected_amenities_deviation_heat_value <- renderText({ 
-            paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", selected_amenities_deviation_heat_value, "°C")
+            paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", deviation_sign, selected_amenities_deviation_heat_value, "°C")
         })
         
         # Selected amenities deviation ratio ----
         selected_amenities_deviation_heat_ratio = round((selected_amenities_avg_heat/city_amenity_avg_heat * 100)-100,2)
+        
+        ratio_sign = check_value(value= selected_amenities_deviation_heat_ratio)
+        
         output$selected_amenities_deviation_heat_ratio <- renderText({ 
-            paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", selected_amenities_deviation_heat_ratio, "%")
+            paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>","(",ratio_sign ,selected_amenities_deviation_heat_ratio, "%)")
         })
         
         # percent of exposed population ----
@@ -826,25 +849,27 @@ server <- function(input, output, session) {
             
 
 
-        # plot narrative
+        # plot narrative 
         output$amenity_exposure_narrative <- renderText({
             paste("<center>","<font size=5px; weight=300; color=\"#454545\"><b>",
                   "<font color=\"#1E90FF\"><b>", " ", "<br>",
+                  "<font color=\"#454545\"><b>","In",
+                  "<font color=\"#1E90FF\"><b>", selected_city,
+                  "<font color=\"#454545\"><b>",",",
                   "<font color=\"#1E90FF\"><b>", round(mean(city_amenity_sector_exposure$percent_exposed_amenities),2), 
-                  "<font color=\"#454545\"><b>","% of physical assets in",
-                  "<font color=\"#1E90FF\"><b>", selected_city, 
+                  "<font color=\"#454545\"><b>","% of sites of the selected amenity sector(s)",
                   "<font color=\"#454545\"><b>","are situated in area of above the selected heat threshold", 
-                  "<font color=\"#1E90FF\"><b>", "(",heat_threshold_value, "°C)", "<br>",
+                  "<font color=\"#1E90FF\"><b>", "(",input$heat_threshold, "°C)", "<br>",
                   "<font color=\"#1E90FF\"><b>", " ", "<br>",
-                  "<font color=\"#454545\"><b>","The most exposed sectors are:",
+                  "<font color=\"#454545\"><b>","The most heat exposed sectors are",
                   "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure$gcom_sector_name[1], 
                   "<font color=\"#454545\"><b>","and", 
                   "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure$gcom_sector_name[2],
-                  "<font color=\"#454545\"><b>","with respectively: ", 
+                  "<font color=\"#454545\"><b>","with", 
                   "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure[1, "percent_exposed_amenities"],"%",
                   "<font color=\"#454545\"><b>","and",
                   "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure[2, "percent_exposed_amenities"],"%",
-                  "<font color=\"#454545\"><b>","of services sites exposed to heat.")
+                  "<font color=\"#454545\"><b>","of sites, respectively, exposed to heat above this temperature.")
         })
         
         
@@ -876,11 +901,29 @@ server <- function(input, output, session) {
                               # "average deviation ratio", target = "row", 
                               # backgroundColor = styleInterval(c(0, 5,20), c("lightgreen", "yellow", "orange", "red")),
                               "Percent of exposed amenties", target = "row", 
-                              backgroundColor = styleInterval(c(0, 50, 75), c("lightgreen", "yellow", "orange", "red")),
+                              # backgroundColor = styleInterval(c(0, 50, 75), c("lightgreen", "yellow", "orange", "red")),
+                              backgroundColor = styleInterval(c(50, 74.9), c("green", "yellow", "red")),
                               fontWeight = 'bold')
             
         )
         
+        # output data to download
+        output$download_amenity_exposure <- downloadHandler(
+            filename = function() {
+                paste(selected_city,"-data-amenity-exposure-", Sys.Date(), ".csv", sep="")
+            },
+            content = function(file) {
+                write.csv(city_amenity, file)
+            }
+        )
+        output$download_sector_exposure <- downloadHandler(
+            filename = function() {
+                paste(selected_city,"-data-sectors-exposure-", Sys.Date(), ".csv", sep="")
+            },
+            content = function(file) {
+                write.csv(city_amenity_sector_exposure_plot, file)
+            }
+        )
 
         
         # population category exposure table ----
@@ -892,11 +935,13 @@ server <- function(input, output, session) {
         output$pop_exposure_narrative <- renderText({
           paste("<center>","<font size=5px; weight=300; color=\"#454545\"><b>",
                 "<font color=\"#1E90FF\"><b>", " ", "<br>",
-                "<font color=\"#1E90FF\"><b>", pop_exposure_ratio, 
-                "<font color=\"#454545\"><b>","% of population in",
+                "<font color=\"#1E90FF\"><b>", pop_exposure_ratio,  
+                "<font color=\"#454545\"><b>","% of",
+                "<font color=\"#1E90FF\"><b>", input$Category_pop,
+                "<font color=\"#454545\"><b>","residential population in",
                 "<font color=\"#1E90FF\"><b>", selected_city, 
-                "<font color=\"#454545\"><b>","are situated in area of above the selected heat threshold", 
-                "<font color=\"#1E90FF\"><b>", "(",heat_threshold_value, "°C)", "<br>",
+                "<font color=\"#454545\"><b>","are situated in areas with extreme temperature above", 
+                "<font color=\"#1E90FF\"><b>", heat_threshold_value, "°C", "<br>",
                 "<font color=\"#1E90FF\"><b>", " ", "<br>")
         })
         
