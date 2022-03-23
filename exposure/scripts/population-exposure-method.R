@@ -103,6 +103,7 @@ selected_city = "CHL-Vitacura"
 city_boundary = boundary %>% 
   filter(city_id == selected_city)
 
+# get heat data for selected city
 city_lst_mask = read.lst(city_boundary = city_boundary,
                          selected_city = "CHL-Vitacura",
                          data_source = "local")
@@ -120,7 +121,7 @@ values(city_lst_mask_threshold)[values(city_lst_mask_threshold) > heat_threshold
 
 # population layer ----
 
-selected_population = "All"
+selected_population = "All" # All
 city_pop_mask = read.pop.category(pop_category = selected_population,
                                   city_boundary = city_boundary,
                                   selected_city = selected_city,
@@ -130,6 +131,12 @@ city_pop_mask = read.pop.category(pop_category = selected_population,
 
 # create exposed population raster
 city_pop_heat_exposure = city_pop_mask * city_lst_mask_threshold
+
+
+test = city_pop_mask * city_lst_mask
+test = weighted.mean(city_lst_mask, values(city_pop_mask), na.rm=FALSE)
+test = weighted.mean(values(city_pop_mask)[!is.na(values(city_pop_mask))],
+                     values(city_lst_mask)[!is.na(values(city_lst_mask))])
 
 # pop exposure classification
 city_pop_heat_exposure_dist = values(city_pop_heat_exposure)[!is.na(values(city_pop_heat_exposure))]
