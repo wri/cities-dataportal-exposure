@@ -256,13 +256,20 @@ ui = navbarPage("City Climate Hazard Exposure Tool",
                                   selectInput(inputId = "Category_pop",
                                               label = "Select population category",
                                               choices = c("All", "Elderly", "Children", "Women"),
-                                              selected = "All"
+                                              selected = "All",
+                                              width = '100%'
                                   ),
                                   
                                   
                                   h5("Average temperature (selected category):"),
                                   # htmlOutput("pop_exposure_ratio"),
-                                  htmlOutput("pop_exposure_avg")
+                                  htmlOutput("pop_exposure_avg"),
+                                  
+                                  # h5("Selected category temperature deviation from threshold:"),
+                                  # htmlOutput("selected_pop_deviation_heat_value"),
+                                  
+                                  htmlOutput("pop_exposure_narrative_2", height = 550),
+                                  htmlOutput("selected_pop_deviation_heat_value")
                                   
                                   
                            ),
@@ -286,7 +293,7 @@ ui = navbarPage("City Climate Hazard Exposure Tool",
                                   ),
                                   # slider
                                   sliderInput(inputId = 'heat_threshold_pop', 
-                                              label = 'Customize heat value threshold', 
+                                              label = 'Customize heat value threshold (default value: average heat of full city area):', 
                                               min = slider_min_heat, 
                                               max = slider_max_heat, 
                                               value = slider_value_heat, 
@@ -317,6 +324,10 @@ server <- function(input, output, session) {
     amenity_exposure_lst[amenity_exposure_lst$city_id == input$City & amenity_exposure_lst$gcom_sector_name %in% input$Sector, ]
   })
   
+  filtereData_pop <- reactive({
+    amenity_exposure_lst[amenity_exposure_lst$city_id == input$City_pop & amenity_exposure_lst$gcom_sector_name %in% input$Sector, ]
+  })
+  
   
   # output map centering amenity map
   output$Map_plot <- renderLeaflet({
@@ -327,7 +338,7 @@ server <- function(input, output, session) {
   
   # output map centering population map
   output$Map_plot_pop <- renderLeaflet({
-    leaflet(filtereData()) %>%
+    leaflet(filtereData_pop()) %>%
       addTiles() %>%
       fitBounds(~min(longitude), ~min(latitude), ~max(longitude), ~max(latitude))
   })
@@ -345,12 +356,12 @@ server <- function(input, output, session) {
   )
   
   observeEvent(
-    input$City,
+    input$City_pop,
     updateSliderInput(session,
                       inputId = "heat_threshold_pop",
-                      value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                      min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
-                      max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City, "exposure_lst_mean"])),
+                      value = round(mean(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City_pop, "city_lst_avg"])),
+                      min = round(min(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City_pop, "exposure_lst_mean"])),
+                      max = round(max(amenity_exposure_lst[amenity_exposure_lst$city_id == input$City_pop, "exposure_lst_mean"])),
                       step = 1
     )
   )
@@ -369,11 +380,13 @@ server <- function(input, output, session) {
     
     # filter data
     selected_city = input$City
+    
     selected_sector = input$Sector
     
     # filter boundary data
     city_boundary = boundary %>% 
       filter(city_id == selected_city)
+    
     
     # filter amenity
     city_amenity = amenity_exposure_lst %>%
@@ -407,6 +420,7 @@ server <- function(input, output, session) {
     pal_amenity <- colorNumeric("RdYlBu", 
                                 domain = city_amenity$exposure_lst_mean,
                                 reverse = TRUE)
+    
     
     # define class color palette
     pal_amenity_class <- colorFactor(c("green","yellow","red"),
@@ -447,8 +461,8 @@ server <- function(input, output, session) {
                        label = labels_amenity,
                        group = "Amenity exposure value") %>%
       # Legend for amenity heat values
-      addLegend(pal = pal_amenity, 
-                values = ~exposure_lst_mean, 
+      addLegend(pal = pal_amenity,
+                values = ~exposure_lst_mean,
                 opacity = 0.9,
                 title = "Amenity heat value (°C)",
                 position = "bottomright",
@@ -487,18 +501,18 @@ server <- function(input, output, session) {
                     textsize = "15px",
                     direction = "auto")) %>%
       # plot Heat distribution raster
-      addRasterImage(city_lst_mask, 
-                     colors = pal_Grid, 
+      addRasterImage(city_lst_mask,
+                     colors = pal_Grid,
                      opacity = 0.7,
                      group = "Land Surface Temperature",
                      maxBytes = 8 * 1024 * 1024) %>%
       # Legend for amenitu heat values
-      addLegend(pal = pal_amenity, 
-                values = ~exposure_lst_mean, 
+      addLegend(pal = pal_amenity,
+                values = ~exposure_lst_mean,
                 opacity = 0.9,
                 title = "Land Surface Temperature (°C)",
                 position = "bottomleft",
-                labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>% 
+                labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
       addLayersControl(
         overlayGroups = c("Amenity exposure value", 
                           "Land Surface Temperature",
@@ -508,9 +522,22 @@ server <- function(input, output, session) {
     
     ### Population ----
     
+    selected_city_pop = input$City_pop
+    
+    
+    # filter boundary data
+    city_boundary_pop = boundary %>% 
+      filter(city_id == selected_city_pop)
+    
+    
+    ### read land surface temperature ----
+    
+    city_lst_mask_pop = read.lst(city_boundary = city_boundary_pop,
+                                 selected_city = selected_city_pop,
+                                 data_source = "local")
     
     # filter heat threshold
-    city_lst_mask_threshold = city_lst_mask
+    city_lst_mask_threshold = city_lst_mask_pop
     
     # get heat threshold
     heat_threshold_value = input$heat_threshold_pop
@@ -524,8 +551,8 @@ server <- function(input, output, session) {
     
     # get filtered population category
     city_pop_mask = read.pop.category(pop_category = selected_population,
-                                      city_boundary = city_boundary,
-                                      selected_city = selected_city,
+                                      city_boundary = city_boundary_pop,
+                                      selected_city = selected_city_pop,
                                       data_source = "local")
     
     # create exposed population raster
@@ -550,11 +577,17 @@ server <- function(input, output, session) {
     # 
     # city_pop_heat_exposure_class = raster::mask(city_pop_heat_exposure_class,city_boundary)
     
+    # create masked layer
+    city_lst_mask_threshold_na = city_lst_mask_threshold
+    city_lst_mask_threshold_na[city_lst_mask_threshold_na==0] <- NA
+    
+    city_pop_mask_heat = mask(x = city_pop_mask,
+                              mask = city_lst_mask_threshold_na)
     
     # prepare map
     
-    pal_Grid <- colorNumeric("RdYlBu",
-                             values(city_lst_mask),
+    pal_Grid_lst <- colorNumeric("RdYlBu",
+                             values(city_lst_mask_pop),
                              na.color = "transparent",
                              reverse = TRUE)
     
@@ -577,15 +610,21 @@ server <- function(input, output, session) {
                                      na.color = "transparent",
                                      reverse = FALSE)
     
+    pal_pop_exposure_masked <- colorNumeric("Reds",
+                                            values(city_pop_mask_heat),
+                                            na.color = "transparent",
+                                            reverse = FALSE)
+    
     # plot map
-    leafletProxy(mapId = "Map_plot_pop", data = filtereData())  %>%
+    leafletProxy(mapId = "Map_plot_pop", data = filtereData_pop()) %>%
+      #leafletProxy(mapId = "Map_plot_pop", data = filtereData()) 
       # Base groups
       addTiles(group = "OSM (default)") %>%
       addTiles() %>%
       clearControls() %>%
       clearShapes() %>%
       # plot boundary
-      addPolygons(data = city_boundary,
+      addPolygons(data = city_boundary_pop,
                   group = "Administrative boundaries",
                   stroke = TRUE, color = "black", weight = 3,dashArray = "3",
                   smoothFactor = 0.3, fill = FALSE, fillOpacity = 0.5,
@@ -595,48 +634,60 @@ server <- function(input, output, session) {
                     dashArray = "",
                     fillOpacity = 0.3,
                     bringToFront = TRUE),
-                  label = city_boundary$city_name,
+                  label = city_boundary_pop$city_name,
                   labelOptions = labelOptions(
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto")) %>%
+      # plot Population distribution raster
+      addRasterImage(city_pop_mask_heat,
+                     colors = pal_pop_exposure_masked ,
+                     opacity = 0.9,
+                     group = "Exposed population",
+                     maxBytes = 8 * 1024 * 1024) %>%
+      # Legend for population mask
+      addLegend(pal = pal_pop_exposure_masked ,
+                values = ~values(city_pop_mask_heat),
+                opacity = 0.9,
+                title = "Exposed population",
+                position = "topright") %>%
       # # plot Population distribution raster
-      # addRasterImage(city_pop_mask,
-      #                colors = pal_Grid_pop,
-      #                opacity = 0.7,
-      #                group = "Population count",
-      #                maxBytes = 8 * 1024 * 1024) %>%
-      # # Legend for population count
-      # addLegend(pal = pal_Grid_pop,
-      #           values = ~values(city_pop_mask),
-      #           opacity = 0.9,
-      #           title = "Population count (per km2)",
-    #           position = "topleft") %>%
+    addRasterImage(city_pop_mask,
+                   colors = pal_Grid_pop,
+                   opacity = 0.7,
+                   group = "Population count",
+                   maxBytes = 8 * 1024 * 1024) %>%
+    # Legend for population count
+    addLegend(pal = pal_Grid_pop,
+              values = ~values(city_pop_mask),
+              opacity = 0.9,
+              title = "Population count (per km2)",
+              position = "bottomleft") %>%
     # plot Heat distribution raster
-    addRasterImage(city_lst_mask,
-                   colors = pal_Grid,
+    addRasterImage(city_lst_mask_pop,
+                   colors = pal_Grid_lst,
                    opacity = 0.7,
                    group = "Land Surface Temperature",
                    maxBytes = 8 * 1024 * 1024) %>%
       # Legend for Land surface temperature raster
-      addLegend(pal = pal_Grid,
-                values = ~values(city_lst_mask),
+      addLegend(pal = pal_Grid_lst,
+                values = ~values(city_lst_mask_pop),
                 opacity = 0.9,
                 title = "Land Surface Temperature (°C)",
                 position = "bottomright",
                 labFormat = labelFormat(transform = function(x) sort(x, decreasing = FALSE))) %>%
-      # plot exposed Population distribution raster
-      addRasterImage(city_pop_heat_exposure,
-                     colors = pal_pop_exposure ,
-                     opacity = 0.9,
-                     group = "Exposed population",
-                     maxBytes = 8 * 1024 * 1024) %>%
-      # Legend for exposed population count
-      addLegend(pal = pal_pop_exposure ,
-                values = ~values(city_pop_heat_exposure),
-                opacity = 0.9,
-                title = "Exposed population (per km2)",
-                position = "topright") %>% 
+      # # plot exposed Population distribution raster
+      # addRasterImage(city_pop_heat_exposure,
+      #                colors = pal_pop_exposure ,
+      #                opacity = 0.9,
+      #                group = "Exposed population",
+      #                maxBytes = 8 * 1024 * 1024) %>%
+      # # Legend for exposed population count
+      # addLegend(pal = pal_pop_exposure ,
+      #           values = ~values(city_pop_heat_exposure),
+      #           opacity = 0.9,
+      #           title = "Exposed population (per km2)",
+      #           position = "topright") %>% 
       # # plot Population exposure class raster
       # addRasterImage(city_pop_heat_exposure_class,
       #              colors = pal_Grid_pop_exposure_class,
@@ -652,11 +703,13 @@ server <- function(input, output, session) {
     #             title = "Population exposure",
     #             position = "topright") %>%
     addLayersControl(
-      overlayGroups = c("Exposed population",
-                        "Land Surface Temperature"),
+      overlayGroups = c("Land Surface Temperature",
+                        "Population count",
+                        "Exposed population"),
       options = layersControlOptions(collapsed = FALSE)
     ) %>% 
-      hideGroup(c("Land Surface Temperature"))
+      hideGroup(c("Land Surface Temperature",
+                  "Population count"))
     
     ### Sector plot ----
     
@@ -705,7 +758,6 @@ server <- function(input, output, session) {
     
     exposure_color = city_amenity_sector_exposure$exposure_color
     
-    print(city_amenity_sector_exposure)
     
     output$Sector_plot <- renderPlotly({
       
@@ -747,14 +799,14 @@ server <- function(input, output, session) {
     pop_categories = c("Children","Elderly","Women")
     
     pop_exposure_stat = data.frame(
-      Selected.city = rep(selected_city,3),
+      Selected.city = rep(selected_city_pop,3),
       Population.category = pop_categories)
     
     # All population exposure stat
     
     city_pop_all = read.pop.category(pop_category = "All",
-                                     city_boundary = city_boundary,
-                                     selected_city = selected_city,
+                                     city_boundary = city_boundary_pop,
+                                     selected_city = selected_city_pop,
                                      data_source = "local")
     city_pop_all[is.na(city_pop_all)] <- 0
     
@@ -766,8 +818,8 @@ server <- function(input, output, session) {
       pop_category = pop_categories[i]
       
       city_pop_category = read.pop.category(pop_category = pop_category,
-                                            city_boundary = city_boundary,
-                                            selected_city = selected_city,
+                                            city_boundary = city_boundary_pop,
+                                            selected_city = selected_city_pop,
                                             data_source = "local")
       city_pop_category[is.na(city_pop_category)] <- 0
       
@@ -805,20 +857,20 @@ server <- function(input, output, session) {
         arrange(desc(`Percent of exposed population from all population`)) %>% 
         plot_ly() %>% 
         add_trace(x = ~Population.category,
-                  y = ~`Percent of exposed population from all population`, 
+                  y = ~ `Population percent`, #`Percent of exposed population from all population`, 
                   type = "bar",
                   orientation = "v",
-                  name = 'Percent of exposed persons from <br> (compared to all population)',
+                  name = 'Total population of category',
                   text = ~paste("Population percent: ",`Population percent`, 
                                 '<br>Percent of exposed population from all population:', `Percent of exposed population from all population`)) %>% 
         add_trace(x = ~Population.category,
-                  y = ~`Percent of exposed population from population category`, 
+                  y = ~`Percent of exposed population from all population`, #`Percent of exposed population from population category`, 
                   type = "bar",
                   orientation = "v",
-                  name = 'Percent of exposed population <br> (compared to population category)',
+                  name = 'Exposed population of category',
                   text = ~paste("Population percent: ",`Population percent`, 
                                 '<br>Percent of exposed population from all population:', `Percent of exposed population from all population`)) %>% 
-        layout(yaxis = list(title = 'Percent of exposed persons by category (%)'),
+        layout(yaxis = list(title = 'Percent of total population by category (%)'),
                xaxis = list(title = 'Population categories'),
                barmode = 'group')
       
@@ -860,21 +912,32 @@ server <- function(input, output, session) {
       paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", pop_exposure_ratio, "%")
     })
     
-    # print(city_pop_mask)
-    # print(city_lst_mask)
-    # pop_exposure_avg = weighted.mean(values(city_pop_mask),
-    #                                  values(city_lst_mask),
-    #                                  na.rm = TRUE )
-    # print(length(values(city_pop_mask)))
-    # print(length(values(city_lst_mask)))
     
     # percent of exposed population ----
-    pop_exposure_avg = round(weighted.mean(x = values(city_lst_mask),
+    pop_exposure_avg = round(weighted.mean(x = values(city_lst_mask_pop),
                                            w = values(city_pop_mask),
                                            na.rm = TRUE),2)
     output$pop_exposure_avg <- renderText({
       paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", pop_exposure_avg, "°C")
     })
+
+
+    pop_exposure_deviation = round(pop_exposure_avg - input$heat_threshold_pop,2)
+
+    deviation_sign = check_value(value= pop_exposure_deviation)
+    
+    output$selected_pop_deviation_heat_value <- renderText({
+      paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>",deviation_sign, pop_exposure_deviation, "°C")
+    })
+    
+
+    
+    # pop_exposure_deviation_ratio = round((pop_exposure_avg*100)/input$heat_threshold_pop,2)
+    # 
+    # output$selected_pop_deviation_heat_ratio <- renderText({
+    #   paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", "(",deviation_sign, pop_exposure_deviation_ratio, "%)")
+    # })
+    
     
     
     # amenity exposure narrative summary ----
@@ -895,8 +958,8 @@ server <- function(input, output, session) {
             "<font color=\"#454545\"><b>",",",
             "<font color=\"#1E90FF\"><b>", round(mean(city_amenity_sector_exposure$percent_exposed_amenities),2), 
             "<font color=\"#454545\"><b>","% of sites of the selected amenity sector(s)",
-            "<font color=\"#454545\"><b>","are situated in area of above the selected heat threshold", 
-            "<font color=\"#1E90FF\"><b>", "(",input$heat_threshold, "°C)", "<br>",
+            "<font color=\"#454545\"><b>","are situated in area of above", 
+            "<font color=\"#1E90FF\"><b>", input$heat_threshold, "°C", "<br>",
             "<font color=\"#1E90FF\"><b>", " ", "<br>",
             "<font color=\"#454545\"><b>","The most heat exposed sectors are",
             "<font color=\"#1E90FF\"><b>", city_amenity_sector_exposure$gcom_sector_name[1], 
@@ -969,6 +1032,7 @@ server <- function(input, output, session) {
       DT::datatable(pop_exposure_stat))
     
     # population exposure narrative summary ----
+    
     output$pop_exposure_narrative <- renderText({
       paste("<center>","<font size=5px; weight=300; color=\"#454545\"><b>",
             "<font color=\"#1E90FF\"><b>", " ", "<br>",
@@ -976,10 +1040,24 @@ server <- function(input, output, session) {
             "<font color=\"#454545\"><b>","% of",
             "<font color=\"#1E90FF\"><b>", input$Category_pop,
             "<font color=\"#454545\"><b>","residential population in",
-            "<font color=\"#1E90FF\"><b>", selected_city, 
+            "<font color=\"#1E90FF\"><b>", input$City_pop, 
             "<font color=\"#454545\"><b>","are situated in areas with extreme temperature above", 
-            "<font color=\"#1E90FF\"><b>", heat_threshold_value, "°C", "<br>",
+            "<font color=\"#1E90FF\"><b>", input$heat_threshold_pop, "°C", "<br>",
             "<font color=\"#1E90FF\"><b>", " ", "<br>")
+    })
+    
+    print(paste("input$heat_threshold_pop", input$heat_threshold_pop))
+    print(paste("selected_city_lst_value", selected_city_lst_value))
+    
+    if(input$heat_threshold_pop == round(selected_city_lst_value,0)){
+      threshold_text = "city average"
+    }else{threshold_text = "defined threshold"}
+    
+    print(paste("threshold_text", threshold_text))
+
+    output$pop_exposure_narrative_2 <- renderText({
+      paste("Selected category temperature deviation from",
+            "<font color=\"#1E90FF\"><b>", threshold_text)
     })
     
   })
