@@ -133,6 +133,8 @@ city_pop_mask = read.pop.category(pop_category = selected_population,
 city_pop_heat_exposure = city_pop_mask * city_lst_mask_threshold
 
 
+
+
 test = city_pop_mask * city_lst_mask
 test = weighted.mean(city_lst_mask, values(city_pop_mask), na.rm=FALSE)
 test = weighted.mean(values(city_pop_mask)[!is.na(values(city_pop_mask))],
@@ -152,6 +154,18 @@ m <- cbind(from = c(-Inf, 0, city_pop_heat_exposure_median),
 city_pop_heat_exposure_class = reclassify(city_pop_heat_exposure, m)
 
 city_pop_heat_exposure_class = raster::mask(city_pop_heat_exposure_class,city_boundary)
+
+# create masked layer
+city_lst_mask_threshold_na = city_lst_mask_threshold
+city_lst_mask_threshold_na[city_lst_mask_threshold_na==0] <- NA
+
+city_pop_mask_heat = mask(x = city_pop_mask,
+                          mask = city_lst_mask_threshold_na)
+
+city_pop_mask_heat = crop(city_pop_mask,
+                          city_lst_mask_threshold)
+
+city_pop_mask_heat <- crop(x = city_pop_mask_heat, y = extent(city_lst_mask_threshold))
 
 # map prep ----
 
@@ -177,6 +191,11 @@ pal_pop_exposure <- colorNumeric("Reds",
 pal_Grid_pop_exposure_class <- colorFactor(c("green","yellow","red"),
                                            levels = c(0,1,2),
                                            na.color = "transparent")
+
+pal_pop_exposure_masked <- colorNumeric("Reds",
+                                 values(city_pop_mask_heat),
+                                 na.color = "transparent",
+                                 reverse = FALSE)
 
 map = leaflet(city_boundary)  %>%
   addTiles(group = "OSM (default)") %>%
@@ -247,27 +266,40 @@ map = leaflet(city_boundary)  %>%
             opacity = 0.9,
             title = "Population exposure count",
             position = "bottomright") %>%
-  # plot Population exposure class raster
-  addRasterImage(city_pop_heat_exposure_class,
-                 colors = pal_Grid_pop_exposure_class,
-                 opacity = 1,
-                 group = "Population exposure class",
+  # # plot Population exposure class raster
+  # addRasterImage(city_pop_heat_exposure_class,
+  #                colors = pal_Grid_pop_exposure_class,
+  #                opacity = 1,
+  #                group = "Population exposure class",
+  #                maxBytes = 8 * 1024 * 1024) %>%
+  # # Legend for population exposure class
+  # addLegend(colors = c("green", "yellow", "red"),
+  #           labels = c("Low", "Moderate", "High"),
+  #           # pal = pal_Grid_pop_exposure_class,
+  #           # values = c(0,1,2),
+  #           opacity = 0.7,
+  #           title = "Population exposure class",
+  #           position = "topleft") %>%   
+  # plot Population distribution raster
+  addRasterImage(city_pop_mask_heat,
+                 colors = pal_pop_exposure_masked ,
+                 opacity = 0.9,
+                 group = "Population exposure mask",
                  maxBytes = 8 * 1024 * 1024) %>%
-  # Legend for population exposure class
-  addLegend(colors = c("green", "yellow", "red"),
-            labels = c("Low", "Moderate", "High"),
-            # pal = pal_Grid_pop_exposure_class,
-            # values = c(0,1,2),
-            opacity = 0.7,
-            title = "Population exposure class",
-            position = "topleft") %>%   
+  # Legend for population mask
+  addLegend(pal = pal_pop_exposure_masked ,
+            values = ~values(city_pop_mask_heat),
+            opacity = 0.9,
+            title = "Population exposure mask",
+            position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c("OSM (default)", "CartoDB"),
     overlayGroups = c("Land Surface Temperature",
                       "Heat exposure",
                       "Population count",
                       "Population exposure count",
-                      "Population exposure class"),
+                      "Population exposure class",
+                      "Population exposure mask"),
     options = layersControlOptions(collapsed = FALSE)
   )
 
