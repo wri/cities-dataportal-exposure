@@ -269,7 +269,8 @@ ui = navbarPage("City Climate Hazard Exposure Tool",
                                   # htmlOutput("selected_pop_deviation_heat_value"),
                                   
                                   htmlOutput("pop_exposure_narrative_2", height = 550),
-                                  htmlOutput("selected_pop_deviation_heat_value")
+                                  htmlOutput("selected_pop_deviation_heat_value"),
+                                  htmlOutput("selected_pop_deviation_heat_ratio")
                                   
                                   
                            ),
@@ -921,6 +922,7 @@ server <- function(input, output, session) {
       paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", pop_exposure_avg, "°C")
     })
 
+    # pop exposure deviation value
 
     pop_exposure_deviation = round(pop_exposure_avg - input$heat_threshold_pop,2)
 
@@ -930,13 +932,13 @@ server <- function(input, output, session) {
       paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>",deviation_sign, pop_exposure_deviation, "°C")
     })
     
-
+    # pop exposure deviation ratio
     
-    # pop_exposure_deviation_ratio = round((pop_exposure_avg*100)/input$heat_threshold_pop,2)
-    # 
-    # output$selected_pop_deviation_heat_ratio <- renderText({
-    #   paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", "(",deviation_sign, pop_exposure_deviation_ratio, "%)")
-    # })
+    pop_exposure_deviation_ratio = round(round((pop_exposure_avg*100)/input$heat_threshold_pop,2) - 100,2)
+
+    output$selected_pop_deviation_heat_ratio <- renderText({
+      paste("<center>","<font size=5px; weight=500; color=\"#1E90FF\"><b>", "(",deviation_sign, pop_exposure_deviation_ratio, "%)")
+    })
     
     
     
